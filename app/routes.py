@@ -16,13 +16,13 @@ def handle_planets():
                 "name": planet.name,
                 "description": planet.description,
                 "habitable" : planet.habitable
-    
+
             })
         return jsonify(planets_response)
     elif request.method == "POST":
         request_body = request.get_json()
         new_planet = Planet(name=request_body["name"],
-                        description=request_body["description"], 
+                        description=request_body["description"],
                         habitable=request_body["habitable"])
 
         db.session.add(new_planet)
@@ -31,13 +31,30 @@ def handle_planets():
         return make_response(f"Planet {new_planet.name} successfully created", 201)
 
 
-@planets_bp.route("/<planet_id>", methods=["GET"])
+@planets_bp.route("/<planet_id>", methods=["GET", "PUT", "DELETE"])
 def handle_planet(planet_id):
     planet = Planet.query.get(planet_id)
+    if planet is None:
+        return make_response("Planet does not exist", 404)
 
-    return {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "habitable" : planet.habitable
-    }
+    if request.method == "GET":
+        return {
+            "id": planet.id,
+            "name": planet.name,
+            "description": planet.description,
+            "habitable" : planet.habitable
+        }
+    elif request.method == "PUT":
+        form_data = request.get_json()
+
+        planet.name = form_data["name"]
+        planet.description = form_data["description"]
+        planet.habitable = form_data["habitable"]
+
+        db.session.commit()
+
+        return make_response(f"Planet #{planet.id} successfully updated")
+    elif request.method == "DELETE":
+        db.session.delete(planet)
+        db.session.commit()
+        return make_response(f"Planet #{planet.id} successfully deleted")
